@@ -1,49 +1,42 @@
 import json
-chemin = "C:/Users/HP/OneDrive/Documents/Tp_Python/catalogue.json"
+
 def charger_catalogue(chemin):
     """
     Charge le fichier JSON et retourne le catalogue.
-
     Args:
         chemin (str): Le chemin vers le fichier JSON à charger.
-
     Returns:
         list: Le catalogue sous forme de liste de dictionnaires.
     """
     try:
-        with open(chemin ,'r', encoding='utf-8',) as f:
-            return json.load(f) 
+        with open(chemin, 'r', encoding='utf-8') as f:
+            return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
-        return [] # Retourne une liste vide si le fichier n'existe pas 
+        return []
 
-
-def sauvegarder_catalogue(data,chemin):
+def sauvegarder_catalogue(data, chemin):
     """
     Sauvegarde les données du catalogue dans un fichier JSON.
-
     Args:
-        data (list): Les données du catalogue sous forme de liste de dictionnaires à sauvegarder.
-        chemin (str): Le chemin vers le fichier JSON où sauvegarder.
-
+        data (list): Les données du catalogue.
+        chemin (str): Le chemin vers le fichier JSON.
     Returns:
-        None
+        bool: True si succès, False sinon.
     """
     try:
         with open(chemin, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=4) 
-        return True #sauvegarde réussie
+            json.dump(data, f, indent=4, ensure_ascii=False)
+        return True
     except Exception:
-        return False #sauvegarde échouée
+        return False
 
 def lister_artistes(catalogue):
     """
     Retourne une liste d'informations résumées des artistes.
-
     Args:
         catalogue (list): Le catalogue des artistes.
-
     Returns:
-        list: Liste résumée des artistes avec nom, genre, pays et nombre d'albums.
+        list: Liste résumée avec nom, genre, pays et nb_albums.
     """
     artistes = []
     for artiste in catalogue:
@@ -51,78 +44,64 @@ def lister_artistes(catalogue):
             "nom": artiste["nom"],
             "genre": artiste["genre"],
             "pays": artiste["pays"],
-            "nbre_albums": len(artiste["albums"]) # Compte le nombre d'albums pour chaque artiste
+            "nb_albums": len(artiste["albums"])  # clé harmonisée avec main.py
         })
     return artistes
 
-
 def rechercher_artiste(catalogue, critere, valeur):
     """
-    Recherche un artiste par nom ou genre.
-
+    Recherche un artiste par nom, genre ou id.
     Args:
         catalogue (list): Le catalogue des artistes.
-        critere (str): Le critère de recherche ("nom" ou "genre").
+        critere (str): "nom", "genre" ou "id".
         valeur (str): La valeur à rechercher.
-
     Returns:
-        - Si critere = "nom": retourne l'artiste trouvé (dict) ou None
-        - Si critere = "genre": retourne la liste des artistes (list)
+        list: Liste des artistes correspondants (vide si aucun résultat).
     """
-    if critere not in ["nom", "genre"]:
-        return None  # Critère invalide
-    if critere == "nom":
-        for artiste in catalogue:
-            if artiste["nom"].lower() == valeur.lower():
-                return artiste
-        return None
-    elif critere == "genre":
-        artistes = []
-        for artiste in catalogue:
-            if artiste["genre"].lower() == valeur.lower():
-                artistes.append(artiste)
-        return artistes
-    else:
-        return None
-    
+    resultats = []
+    for artiste in catalogue:
+        if critere == "id":
+            if artiste["id"].lower() == valeur.lower():
+                resultats.append(artiste)
+        elif critere == "nom":
+            if valeur.lower() in artiste["nom"].lower():
+                resultats.append(artiste)
+        elif critere == "genre":
+            if valeur.lower() in artiste["genre"].lower():
+                resultats.append(artiste)
+    return resultats
 
 def ajouter_artiste(catalogue, artiste):
     """
-    Ajoute un nouvel artiste au catalogue après validation des données et sauvegarde le catalogue.
-
+    Ajoute un nouvel artiste au catalogue après validation.
     Args:
         catalogue (list): Le catalogue des artistes.
-        artiste (dict): Le dictionnaire de l'artiste à ajouter.
-
+        artiste (dict): L'artiste à ajouter.
     Returns:
-        dict or None: Le nouvel artiste ajouté, ou None si l'ID existe déjà.
+        list: Le catalogue mis à jour.
+    Raises:
+        ValueError: Si l'ID existe déjà.
     """
-    
-   # Vérifier que l'ID n'existe pas déjà
     for artiste_existant in catalogue:
         if artiste_existant["id"] == artiste["id"]:
-            return None  # ID déjà utilisé
-    
-    # Ajouter l'artiste
+            raise ValueError(f"L'identifiant '{artiste['id']}' existe déjà.")
     catalogue.append(artiste)
     return catalogue
 
-
 def ajouter_album(catalogue, id_artiste, album):
     """
-    Ajoute un album à un artiste existant après validation des données et sauvegarde le catalogue.
-
+    Ajoute un album à un artiste existant.
     Args:
         catalogue (list): Le catalogue des artistes.
-        id_artiste (str): L'identifiant de l'artiste auquel ajouter l'album.
+        id_artiste (str): L'identifiant de l'artiste.
         album (dict): L'album à ajouter (titre, annee, streams).
-
     Returns:
-        dict: L'album ajouté avec les informations saisies.
+        list: Le catalogue mis à jour.
+    Raises:
+        ValueError: Si l'artiste est introuvable.
     """
     for artiste in catalogue:
         if artiste["id"] == id_artiste:
             artiste["albums"].append(album)
-            return catalogue #Album ajouté avec succès
-    return None  # Artiste non trouvé
-        
+            return catalogue
+    raise ValueError(f"Artiste '{id_artiste}' introuvable.")
