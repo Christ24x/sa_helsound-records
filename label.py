@@ -105,6 +105,9 @@ def ajouter_artiste(catalogue, artiste):
     
     # Ajouter l'artiste
     catalogue.append(artiste)
+    logging.info(
+        f"Ajout artiste:{artiste['nom']} (ID:{artiste['id']})"
+    )
     return catalogue
 
 
@@ -123,6 +126,9 @@ def ajouter_album(catalogue, id_artiste, album):
     for artiste in catalogue:
         if artiste["id"] == id_artiste:
             artiste["albums"].append(album)
+            logging.info(
+        f"Ajout album '{album['titre']} à {artiste['nom']}({id_artiste})"
+    )
             return catalogue #Album ajouté avec succès
     return None  # Artiste non trouvé
         
