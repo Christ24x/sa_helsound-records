@@ -72,7 +72,7 @@ def menu_consulter(catalogue):
                     print(f"Aucun artiste trouve pour '{valeur}'.")
                 else:
                     print(f"\n1 resultat :")
-                    print(f"  - [{resultats['id']}] {resultats['nom']} | {resultats['genre']} | {resultats['pays']}")
+                    print(f"  - {resultats['id']} {resultats['nom']} | {resultats['genre']} | {resultats['pays']}")
             elif critere == "genre":
                 if not resultats:
                     print(f"Aucun artiste trouve pour le genre '{valeur}'.")
