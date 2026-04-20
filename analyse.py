@@ -2,8 +2,11 @@ import json
 import pandas as pd  #importation de la biblio pandas
 import logging
 import matplotlib.pyplot as plt # a use apres pour le graphique
+import os
+import subprocess
+import sys
 
-def charger_catalogue(catalogue):
+def charger_catalogue():
     
     """
     Charge le catalogue depuis le fichier JSON "catalogue.json"
@@ -19,6 +22,7 @@ def charger_catalogue(catalogue):
      with open("catalogue.json", "r", encoding="utf-8") as f: 
         sortie = json.load(f)
         logging.info("CE FICHIER JSON VIENT D'ETRE CHARGE CORRECTEMENT")
+        print(" ✅ Catalogue chargé avec succès. ")
         return sortie
     except FileNotFoundError: 
        logging.error("FICHIER INTROUVABLE")
@@ -48,9 +52,9 @@ def transformation(catalogue):
                 "artiste":artiste["nom"],
                 "genre":artiste["genre"],
                 "pays":artiste["pays"],
-                "titre":album["titre"],
-                "annee":album["annee"],
-                "streams":album["streams"]
+                "titre":album['titre'],
+                "annee":album['annee'],
+                "streams":album['streams']
             }) 
         reponse = data
         logging.info("LISTE DES ALMBUMS APLATIE AVEC SUCCES")
@@ -59,7 +63,7 @@ def transformation(catalogue):
     except KeyError as g: 
         logging.error(f"Abscence de cette clé {g}") 
         return []
-    
+
 def creer_dataframe(data): 
         
         """
@@ -79,7 +83,7 @@ def creer_dataframe(data):
         daframe = pd.DataFrame(data) 
         logging.info("LA DATAFRAME A ETE CREEE AVEC SUCCES")
         return daframe
-    
+
 
 # TOP 5 ARTISTES
 
@@ -92,7 +96,7 @@ def top_five (daframe) :
     daframe (DataFrame) : tableau contenant les données des albums
 
     Retour :
-    Series : liste des 5 artistes avec le total de leurs streams, triés du plus grand au plus petit
+    Dataframe : liste des 5 artistes avec le total de leurs streams, triés du plus grand au plus petit
     """
 
     try :
@@ -139,7 +143,7 @@ def moy_par_genre(daframe):
         logging.error(f"Erreur concernant  la moyenne des streams par genre:{k}")
         return None
     
-    
+
 #GRAPHIQUE DES STREAMS PAR GENRE
 
 def graphique_moy_par_genre(daframe):
@@ -223,6 +227,59 @@ def filtrer_albums_par_an(daframe , annee):
         logging.error(f"Erreur pour la sortie du nbre d'albums pour cette année:{i}")
         return None
 
+def exporter_rapport(daframe, chemin_csv):
+    """
+    
+    Exporte un rapport complet dans un fichier CSV (cré le ficher).
+    on va l'ouvrir automatiquement avec Os mais ça marche que sur window donc 
+    on verra une alternative si trouvé1
+    Le rapport contient : top 5 streams, moyennes par genre,
+    albums par année.
+ 
+    Args:
+        datframe (Dataframe): tableau contenant les données des albums
+        chemin_csv (str): Chemin de destination du fichier rapport.csv.
+ 
+    Returns:
+        str: Chemin du fichier CSV généré avec ouverture automatique.
+    """
+    
+    with open(chemin_csv, "w", encoding="utf-8-sig") as f:
+        f.write("\n=== TOP 5 ARTISTES PAR STREAMS ===\n")
+ 
+        top = top_five(daframe)
+        top.to_csv(f, index=False,sep=";")
+   
+        f.write("\n=== MOYENNE STREAMS PAR GENRE ===\n")
+ 
+        moyenne = moy_par_genre(daframe)
+        moyenne.to_csv(f, index=False, sep=";")
+    
+    
+        f.write("\n=== ALBUMS PAR ANNEE  ===\n")
+ 
+        album = albums_par_annee(daframe)
+        album.to_csv(f, index=False,sep=";")
+    
+
+    return chemin_csv
 
 
+
+def ouvrir_fichier(chemin):
+    """
+    Permet d'ouvrir le ficher csv de façon automatique peut 
+    importe l'os
+    
+    Parametre(str): le chemin du ficher
+
+    return: ouvre le ficher dans un logiciel  
+    
+    """
+    if sys.platform == "win32":
+        os.startfile(chemin)
+    elif sys.platform == "darwin":  # Mac
+        subprocess.call(["open", chemin])
+    else:  # Linux
+        subprocess.call(["xdg-open", chemin])
 
