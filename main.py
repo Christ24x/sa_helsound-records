@@ -1,9 +1,5 @@
-"""
-main.py - Point d'entrée de l'application SahelSound Records
-Auteur : [Ton nom]
-Description : Menu principal et boucle de l'application console
-"""
 
+import logging
 import sys
 import label
 import analyse
