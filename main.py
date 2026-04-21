@@ -3,8 +3,13 @@ import analyse as any
 import json
 import pandas as pd
 import os
+import logging
 
-
+logging.basicConfig(
+    filename="historique.log",
+    level=logging.INFO,
+    format="%(asctime)s - %(message)s"
+)
 
 def afficher_menu_principale():
 
@@ -84,7 +89,7 @@ def consulter_catalogue(catalogue):
                 le cas ou il entre autre chose que le 'nom' ou le 'genre'
                 avec une option 'q' pour quitter après un échec.
             """
-            
+        
             erreur = False
 
             while True:
@@ -104,7 +109,7 @@ def consulter_catalogue(catalogue):
                     continue
 
                 erreur = False
-                  
+                    
                 while True:
                 
                     if not erreur:
@@ -147,7 +152,6 @@ def consulter_catalogue(catalogue):
                         print("  └─")
                     break
 
-
             if critere == "q":
                 continue
 
@@ -174,27 +178,26 @@ def consulter_catalogue(catalogue):
                     break
 
                 if id_artiste != "":
-                    artiste = label.show_detail(catalogue,id_artiste)
-
-                    if artiste is None:
-                        print(f"\n  ❌ Aucun artiste avec l'id '{id_artiste}'.")
-                        continue
-                    else:
-                        print(f"\n  ┌─ {artiste['nom']} ({artiste['id']})")
-                        # print(f"  │  Genre : {artiste['genre']} | Pays : {artiste['pays']}")
-                        print(f"  │  Albums ({len(artiste['albums'])}) :")
-                        for alb in artiste["albums"]:
-                            print(f"  │    • {alb['titre']} ({alb['annee']}) "
-                                f"— {alb['streams']:,} streams")
-                        print("  └─")
-                        break
+                    break
                 else:
                     print("\n  ❌  Id_artiste invalide. Reesayer. ")
                     erreur = True
 
             if id_artiste == "q":
                 continue
-              
+
+            artiste = label.show_detail(catalogue,id_artiste)
+
+            if artiste is None:
+                print(f"\n  ❌ Aucun artiste avec l'id '{id_artiste}'.")
+            else:
+                print(f"\n  ┌─ {artiste['nom']} ({artiste['id']})")
+                # print(f"  │  Genre : {artiste['genre']} | Pays : {artiste['pays']}")
+                print(f"  │  Albums ({len(artiste['albums'])}) :")
+                for alb in artiste["albums"]:
+                    print(f"  │    • {alb['titre']} ({alb['annee']}) "
+                          f"— {alb['streams']:,} streams")
+                print("  └─")  
         elif choix == "r":
             break
         else:
@@ -471,13 +474,12 @@ def add_album(catalogue,chemin):
             
                 nouvel_album = {"titre": titre, "annee": annee, "streams": streams}
                 nouvel_albums.append(nouvel_album)
-                # print(nouvel_albums)
              
             catalogue = label.ajouter_album(catalogue,id_artiste, nouvel_albums)            
             label.sauvegarder_catalogue(catalogue, chemin)
             for alb in nouvel_albums:
                 print(f"\n  ✅ L'album '{alb['titre']}' de l'Artiste '{artiste['nom']}' ajouté avec succès et catalogue sauvegardé.")
-            
+                
             break
         break
     
