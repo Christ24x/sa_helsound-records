@@ -1,240 +1,589 @@
-
-import logging
-import sys
 import label
-import analyse
+import analyse as any
+import json
+import pandas as pd
+import os
+import logging
 
-CHEMIN_CATALOGUE = "catalogue.json"
+logging.basicConfig(
+    filename="historique.log",
+    level=logging.INFO,
+    format="%(asctime)s - %(message)s"
+)
+
+def afficher_menu_principale():
+
+    """Affiche le menu principal de l'application."""
+
+    separateur = "-" * 50
 
 
-def afficher_banniere():
-    """Affiche la bannière de bienvenue."""
-    print("=" * 50)
-    print("   SAHELSOUND RECORDS")
-    print("   Label Musical Independant Africain")
-    print("=" * 50)
+    print("\n",separateur)
+    print("   Bienvenue chez SAHELSOUND RECORDS 🎶")
+    print("   Label Musical Indépendant Africain")
+    print(separateur)
 
-
-def afficher_menu_principal():
-    """Affiche le menu principal."""
-    print("\n-- MENU PRINCIPAL --")
-    print("-" * 30)
-    print("1. Consulter le catalogue")
-    print("2. Ajouter un artiste")
-    print("3. Ajouter un album a un artiste")
-    print("4. Statistiques et rapport")
-    print("5. Quitter")
-    print("-" * 30)
-
+    print("\n",separateur)
+    print("       🎵  SAHELSOUND RECORDS — MENU PRINCIPAL  🎵")
+    print(separateur)
+    print("  1. Consulter le catalogue")
+    print("  2. Ajouter un artiste")
+    print("  3. Ajouter un album à un artiste")
+    print("  4. Statistiques et rapport")
+    print("  5. Quitter")
+    print(separateur)
 
 # ──────────────────────────────────────────────
 # SOUS-MENU 1 : Consulter le catalogue
 # ──────────────────────────────────────────────
 
-def menu_consulter(catalogue):
-    """Sous-menu pour consulter le catalogue."""
-    while True:
-        print("\n-- CONSULTER LE CATALOGUE --")
-        print("-" * 30)
-        print("a. Afficher tous les artistes")
-        print("b. Rechercher un artiste")
-        print("c. Afficher le detail d'un artiste")
-        print("r. Retour au menu principal")
-        print("-" * 30)
+def consulter_catalogue(catalogue):
+    """
+    Sous-menu pour la consultation du catalogue.
+ 
+    Args:
+        catalogue (list): Liste des artistes chargés.
+    """
 
-        choix = input("Votre choix : ").strip().lower()
+
+    while True:
+        
+        print(f"\n{'─' * 50}")
+        print("  CONSULTER LE CATALOGUE")
+        print("─" * 50)
+        print("  a. Afficher tous les artistes")
+        print("  b. Rechercher un artiste par nom ou genre")
+        print("  c. Afficher le détail d'un artiste")
+        print("  r. Retour au menu principal")
+        
+        choix = input("\n  Votre choix : ").strip().lower()
 
         if choix == "a":
-            artistes = label.lister_artistes(catalogue)
-            print(f"\n{'Nom':<20} {'Genre':<15} {'Pays':<10} {'Albums'}")
-            print("-" * 55)
-            for a in artistes:
-                print(f"{a['nom']:<20} {a['genre']:<15} {a['pays']:<10} {a['nbre_albums']}")
-
-        elif choix == "b":
-            print("\nRecherche par :")
-            print("  1. Nom")
-            print("  2. Genre")
-            critere_choix = input("Votre choix (1/2) : ").strip()
-            if critere_choix == "1":
-                critere = "nom"
-            elif critere_choix == "2":
-                critere = "genre"
+            """
+                On affiche tout les artiste du catalogue
+                ici artistes est une liste de plusieurs artiste(objets) que 
+                je parcoure après pour avoir chaque informations.
+            """
+            artistes = label.lister_artistes2(catalogue)
+            #print(artistes)
+            if not artistes:
+                print("  Aucun artiste dans le catalogue.")
             else:
-                print("Choix invalide.")
+                liste = pd.DataFrame(artistes)
+                print("\n")
+                #print(liste)
+
+                for artiste in artistes:
+
+                    print(f"\n  ┌─ {artiste['nom']} ({artiste['id']})")
+                    print(f"  │  Genre : {artiste['genre']} | Pays : {artiste['pays']}")
+                    print(f"  │  Albums ({len(artiste['albums'])}) :")
+                    for alb in artiste["albums"]:
+                        print(f"  │    • {alb['titre']} ({alb['annee']}) "
+                            f"— {alb['streams']:,} streams")
+                    print("  └─")
+        
+        elif choix == "b":
+            """
+                La logique est de vérifier à chaque fois les entrées dans 
+                le cas ou il entre autre chose que le 'nom' ou le 'genre'
+                avec une option 'q' pour quitter après un échec.
+            """
+        
+            erreur = False
+
+            while True:
+                if not erreur:
+                    critere = input("\n  Rechercher par (nom / genre) : ").strip().lower()
+                else:
+                    critere = input("\n  Rechercher par (nom / genre) (q pour quitter) : ").strip().lower()
+
+                if critere == "q":
+                    break
+
+                if critere in ["nom", "genre"]:
+                    pass
+                else:
+                    print("\n  ❌  Critère invalide. Saisissez 'nom' ou 'genre'.")
+                    erreur = True
+                    continue
+
+                erreur = False
+                    
+                while True:
+                
+                    if not erreur:
+                        valeur = input(f"\n Valeur Rechercher par {critere} : ").strip().lower()
+                    else:
+                        valeur = input(f"\n Valeur Rechercher par {critere} (q pour quitter) : ").strip().lower()
+
+                    if valeur == "q":
+                        break
+
+                    if valeur != "":
+                        break
+                    else:
+                        print("\n ❌ Veuillez entrer une valeur valide")
+                        erreur = True
+                
+                if valeur == "q":
+                    continue
+
+                """
+                Resultat est une liste des artistes trouvées qu'on parcoure 
+                """
+                resultat = label.rechercher_artiste(catalogue,critere,valeur)
+                # print(resultat)
+
+                if not resultat:
+                    print(f"\n ❌  Aucun résultat pour '{valeur}'.")
+                    erreur = False
+                else:
+                    # search = any.laoding_data(resultat)
+                    # print(search)
+                    for artiste in resultat:
+
+                        print(f"\n  ┌─ {artiste['nom']} ({artiste['id']})")
+                        print(f"  │  Genre : {artiste['genre']} | Pays : {artiste['pays']}")
+                        print(f"  │  Albums ({len(artiste['albums'])}) :")
+                        for alb in artiste["albums"]:
+                            print(f"  │    • {alb['titre']} ({alb['annee']}) "
+                                f"— {alb['streams']:,} streams")
+                        print("  └─")
+                    break
+
+            if critere == "q":
                 continue
 
-            valeur = input(f"Entrez le {critere} : ").strip()
-            resultats = label.rechercher_artiste(catalogue, critere, valeur)
-
-            if critere == "nom":
-                if resultats is None:
-                    print(f"Aucun artiste trouve pour '{valeur}'.")
-                else:
-                    print(f"\n1 resultat :")
-                    print(f"  - {resultats['id']} {resultats['nom']} | {resultats['genre']} | {resultats['pays']}")
-            elif critere == "genre":
-                if not resultats:
-                    print(f"Aucun artiste trouve pour le genre '{valeur}'.")
-                else:
-                    print(f"\n{len(resultats)} resultat(s) :")
-                    for a in resultats:
-                        print(f"  - [{a['id']}] {a['nom']} | {a['genre']} | {a['pays']}")
-
         elif choix == "c":
-            nom_artiste = input("Entrez le nom de l'artiste : ").strip()
-            artiste = label.rechercher_artiste(catalogue, "nom", nom_artiste)
-            if artiste is None:
-                print(f"Artiste '{nom_artiste}' introuvable.")
-            else:
-                print(f"\n{artiste['nom']} ({artiste['pays']}) — {artiste['genre']}")
-                print(f"   Albums ({len(artiste['albums'])}) :")
-                for album in artiste["albums"]:
-                    print(f"   - {album['titre']} ({album['annee']}) — {album['streams']:,} streams")
+            """
+            Ici il s'agie d'afficher le detail d'un artiste. 
+            On demande l'id de l'artiste.
+                 - On vérifie la validité du format (ART-XXX)
+                 - L'existance de l'Id
 
+            On retourne artiste. Mais comme on utilise l'id c'est que d'office 
+            l'artiste est unique. 
+            """
+            
+            erreur = False
+
+            while True:
+                if not erreur:
+                    id_artiste = input("\n  Identifiant de l'artiste (ex: ART-001) : ").strip().lower()
+                else:
+                    id_artiste = input("\n  Identifiant de l'artiste (ex: ART-001)  (q pour quitter) : ").strip().lower()
+
+                if id_artiste == "q":
+                    break
+
+                if id_artiste != "":
+                    break
+                else:
+                    print("\n  ❌  Id_artiste invalide. Reesayer. ")
+                    erreur = True
+
+            if id_artiste == "q":
+                continue
+
+            artiste = label.show_detail(catalogue,id_artiste)
+
+            if artiste is None:
+                print(f"\n  ❌ Aucun artiste avec l'id '{id_artiste}'.")
+            else:
+                print(f"\n  ┌─ {artiste['nom']} ({artiste['id']})")
+                # print(f"  │  Genre : {artiste['genre']} | Pays : {artiste['pays']}")
+                print(f"  │  Albums ({len(artiste['albums'])}) :")
+                for alb in artiste["albums"]:
+                    print(f"  │    • {alb['titre']} ({alb['annee']}) "
+                          f"— {alb['streams']:,} streams")
+                print("  └─")  
         elif choix == "r":
             break
         else:
-            print("Option invalide, reessayez.")
+            print("  ❌ Option invalide.")
 
+                    
+def verification(type):
+    """
+        La fonction vérifie la validité de l'entré en parametre.
+        Il est utilisé au niveau de ajouter artiste pour verifier 
+        que les entrées ne soit pas null.
 
+        Args:
+           type(str): c'est l'entré demandé à l'utilisateur (nom/genre/...)
+    """
+    erreur = False
+                    
+    while True:
+    
+        if not erreur:
+            variable = input(f"\n Entrer le {type} : ").strip()
+        else:
+            variable = input(f"\n  {type} (q pour quitter) : ").strip()
+
+        if variable == "q":
+            return None
+
+        if variable != "":
+            return variable
+        else:
+            print(f"\n ❌ Le {type} ne peut pas être vide.")
+            erreur = True
+    
+def valider_id(valeur):
+    """
+    Vérifie si le format de l'id est valide.
+    Utiliser dans ajouter artiste et ajout d'album
+
+    Args:
+      valeur(str): l'id entré
+    """
+    if not valeur.startswith("art-"):
+        return False
+    
+    chiffres = valeur[4:]
+
+    return chiffres.isdigit() and len(chiffres) == 3
+    
 # ──────────────────────────────────────────────
 # SOUS-MENU 2 : Ajouter un artiste
 # ──────────────────────────────────────────────
 
-def menu_ajouter_artiste(catalogue):
-    """Sous-menu pour ajouter un nouvel artiste."""
-    print("\n-- AJOUTER UN ARTISTE --")
-    print("-" * 30)
+def add_artiste(catalogue,chemin):
+    """
+    Sous-menu pour ajouter un nouvel artiste au catalogue.
+      - ajout avec id générer automatiquement
+      - ajout manuel
+ 
+    Args:
+        catalogue (list): Liste des artistes (modifiée en place).
+        chemin (str): le chemin du ficher
+ 
+    Returns:
+        list: Catalogue mis à jour.
+    """
 
-    try:
-        id_artiste = input("Identifiant (ex: ART-017) : ").strip()
-        nom        = input("Nom de scene : ").strip()
-        genre      = input("Genre musical : ").strip()
-        pays       = input("Pays d'origine : ").strip()
+    while True:
+        print(f"\n{'─' * 50}")
+        print("  \t\tAJOUTER UN ARTISTE")
+        print("─" * 50)
+        print("  a. Id automatique")
+        print("  b. Entrer l'id manuel")
+        print("  c. Quitter")
+        
+        choix = input("\n  ------Votre choix : ").strip().lower()
 
-        if not id_artiste or not nom or not genre or not pays:
-            print("Tous les champs sont obligatoires.")
-            return catalogue
+        if choix == "c":
+            break
 
+        if choix not in ["a","b"]:
+            print(" ❌ Veillez entrer un choix valide. ")
+
+
+        if choix == "a":
+            id_artiste = label.generate_id(catalogue)
+
+        elif choix == "b":
+
+            erreur = False
+            while True:
+                if not erreur:
+                    id_artiste = input("\n  Identifiant de l'artiste (ex: ART-001) : ").strip().lower()
+                else:
+                    id_artiste = input("\n  Identifiant de l'artiste (ex: ART-001) (q pour quitter) : ").strip().lower()
+
+                if id_artiste == "q":
+                    break
+
+                if valider_id(id_artiste):
+                    break
+                else:
+                    print("\n ❌ Format invalide (ex: ART-001)")
+                    erreur = True
+
+            if id_artiste == "q":
+                continue
+            
+                    
+        nom = verification("Nom de scène ")
+        if nom == None:
+            continue
+        
+        genre = verification("Genre Musicale")
+        if nom == None:
+            continue
+
+        pays = verification("Pays D'origine")
+        if nom == None:
+            continue
+        
+        nouvel_albums = []
+
+        while True:
+                
+            albums = int(input("\n Combien d'album(s) voulez-vous entrer ? "))
+
+            if albums <= 0 or albums == "":
+                print("❌ Entrer un nombre positif")
+            else:
+                break  # ✅ valeur correcte → on sort de la boucle
+
+        
+        for loop in range(albums):
+            
+            titre = input("\n  Titre de l'album : ").strip()
+            if not titre:
+                print("\n  ❌ Le titre ne peut pas être vide.")
+            
+            while True:
+                try:
+                    annee = int(input("  Année de sortie : ").strip())
+                    if annee < 0:
+                        raise ValueError
+                    break
+
+                except ValueError:
+                    print("\n  ❌ Année invalide — saisissez un nombre entier.")
+                    continue
+            
+            while True:
+                try:
+                    streams = int(input("  Nombre de streams : ").strip())
+                    if streams < 0:
+                        raise ValueError
+                    break
+                except ValueError:
+                    print("  ❌ Nombre de streams invalide — saisissez un entier positif.")
+                    continue
+        
+            nouvel_album = {"titre": titre, "annee": annee, "streams": streams}
+            nouvel_albums.append(nouvel_album)
+
+    
         nouvel_artiste = {
-            "id": id_artiste,
+            "id": id_artiste.upper(),
             "nom": nom,
             "genre": genre,
             "pays": pays,
-            "albums": []
+            "albums": nouvel_albums,
         }
-
-        resultat = label.ajouter_artiste(catalogue, nouvel_artiste)
-        if resultat is None:
-            print(f"L'identifiant '{id_artiste}' existe deja.")
-        else:
-            catalogue = resultat
-            label.sauvegarder_catalogue(catalogue, CHEMIN_CATALOGUE)
-            print(f"Artiste '{nom}' ajoute avec succes !")
-
-    except ValueError as e:
-        print(f"Erreur : {e}")
-
-    return catalogue
-
+    
+        try:
+            try:
+                catalogue = label.ajouter_artiste(catalogue, nouvel_artiste)
+            except ValueError as e :
+                print(e)
+                continue
+            
+            label.sauvegarder_catalogue(catalogue, chemin)
+            print(f"\n  ✅ Artiste '{nom}' ajouté avec succès et catalogue sauvegardé.")
+        except ValueError as e:
+            print(f"  ❌ {e}")
 
 # ──────────────────────────────────────────────
 # SOUS-MENU 3 : Ajouter un album
 # ──────────────────────────────────────────────
 
-def menu_ajouter_album(catalogue):
-    """Sous-menu pour ajouter un album a un artiste existant."""
-    print("\n-- AJOUTER UN ALBUM --")
-    print("-" * 30)
+def add_album(catalogue,chemin):
+    """
+    Ajouter un album à un artiste existant.
+       - Demande l'id et vérifie le format. 
+       si artiste trouvé le notifie sinon renvois une erreur.
+ 
+    Args:
+        catalogue (list): Liste des artistes (modifiée en place).
+ 
+    Returns:
+        list: Catalogue mis à jour.
+    """
 
-    try:
-        id_artiste = input("Identifiant de l'artiste (ex: ART-001) : ").strip()
+    while True: 
+        print(f"\n{'─' * 55}")
+        print("  AJOUTER UN ALBUM À UN ARTISTE")
+        print("─" * 55)
 
-        artiste_trouve = None
-        for a in catalogue:
-            if a["id"] == id_artiste:
-                artiste_trouve = a
+        erreur = False
+        while True:
+            if not erreur:
+                id_artiste = input("\n  Identifiant de l'artiste (ex: ART-001) : ").strip().lower()
+            else:
+                id_artiste = input("\n  Identifiant de l'artiste (ex: ART-001) (q pour quitter) : ").strip().lower()
+
+            if id_artiste == "q":
                 break
 
-        if artiste_trouve is None:
-            print(f"Artiste '{id_artiste}' introuvable.")
-            return catalogue
+            if valider_id(id_artiste):
+                break
+            else:
+                print("\n ❌ Format invalide (ex: ART-001)")
+                erreur = True
+                continue
+        if id_artiste == "q":
+            break
 
-        print(f"Artiste trouve : {artiste_trouve['nom']}")
+            
+        try:
+            artiste = label.get_artiste(catalogue,id_artiste)
+            if artiste :
+                print(" ✅ Artiste trouvé")
+        except ValueError as e:
+            print("\n",e)
+            continue
+        
+        nouvel_albums = []
 
-        titre   = input("Titre de l'album : ").strip()
-        annee   = int(input("Annee de sortie : ").strip())
-        streams = int(input("Nombre de streams : ").strip())
+        while True:
+                
+            while True:
+                albums = int(input("\n Combien d'album(s) voulez-vous entrer ? "))
 
-        if not titre:
-            print("Le titre est obligatoire.")
-            return catalogue
+                if albums <= 0 or albums == "":
+                    print("❌ Entrer un nombre positif")
+                    continue
+                else:
+                    break  
 
-        nouvel_album = {
-            "titre": titre,
-            "annee": annee,
-            "streams": streams
-        }
+        
+            for loop in range(albums):
+                
+                titre = input("\n  Titre de l'album : ").strip()
+                if not titre:
+                    print("\n  ❌ Le titre ne peut pas être vide.")
+                
+                while True:
+                    try:
+                        annee = int(input("  Année de sortie : ").strip())
+                        if annee < 0:
+                            raise ValueError
+                        break
 
-        resultat = label.ajouter_album(catalogue, id_artiste, nouvel_album)
-        if resultat is None:
-            print("Erreur lors de l'ajout de l'album.")
-        else:
-            catalogue = resultat
-            label.sauvegarder_catalogue(catalogue, CHEMIN_CATALOGUE)
-            print(f"Album '{titre}' ajoute a {artiste_trouve['nom']} !")
-
-    except ValueError:
-        print("L'annee et les streams doivent etre des nombres entiers.")
-
-    return catalogue
-
-
+                    except ValueError:
+                        print("\n  ❌ Année invalide — saisissez un nombre entier.")
+                        continue
+                
+                while True:
+                    try:
+                        streams = int(input("  Nombre de streams : ").strip())
+                        if streams < 0:
+                            raise ValueError
+                        break
+                    except ValueError:
+                        print("  ❌ Nombre de streams invalide — saisissez un entier positif.")
+                        continue
+            
+                nouvel_album = {"titre": titre, "annee": annee, "streams": streams}
+                nouvel_albums.append(nouvel_album)
+             
+            catalogue = label.ajouter_album(catalogue,id_artiste, nouvel_albums)            
+            label.sauvegarder_catalogue(catalogue, chemin)
+            for alb in nouvel_albums:
+                print(f"\n  ✅ L'album '{alb['titre']}' de l'Artiste '{artiste['nom']}' ajouté avec succès et catalogue sauvegardé.")
+                
+            break
+        break
+    
 # ──────────────────────────────────────────────
 # SOUS-MENU 4 : Statistiques et rapport
 # ──────────────────────────────────────────────
 
-def menu_statistiques():
-    """Sous-menu pour afficher les statistiques et exporter le rapport."""
-    while True:
-        print("\n-- STATISTIQUES ET RAPPORT --")
-        print("-" * 30)
-        print("a. Top 5 artistes par streams")
-        print("b. Moyenne des streams par genre")
-        print("c. Albums par annee")
-        print("d. Exporter le rapport complet (rapport.csv)")
-        print("r. Retour au menu principal")
-        print("-" * 30)
+def statistique_rapport():
+    
+    """Sous-menu pour les statistiques et l'export du rapport."""
 
-        choix = input("Votre choix : ").strip().lower()
+    catalogue = any.charger_catalogue()
+    liste = any.transformation(catalogue)
+    datframe = any.creer_dataframe(liste)
+
+    
+    while True:
+        print(f"\n{'─' * 50}")
+        print("  STATISTIQUES ET RAPPORT")
+        print("─" * 50)
+        print("  a. Top 5 des artistes par streams")
+        print("  b. Moyenne des streams par genre")
+        print("  c. Nombre d'albums par année")
+        print("  d. Exporter le rapport complet (rapport.csv)")
+        print("  e. Générer un graphique des streams par genre.")
+        print("  r. Retour au menu principal")
+        
+        choix = input("\n  Votre choix : ").strip().lower()
 
         if choix == "a":
-            top5 = analyse.top5_artistes(CHEMIN_CATALOGUE)
-            print("\nTop 5 artistes par streams :")
-            for i, (nom, streams) in enumerate(top5, 1):
-                print(f"  {i}. {nom} — {streams:,} streams")
+            print("\n" + "=" * 50)
+            print("   TOP 5 ARTISTES PAR NOMBRE TOTAL DE STREAMS")
+            print("=" * 50)
+
+            top_Five = any.top_five(datframe)
+            print(top_Five)
 
         elif choix == "b":
-            moyennes = analyse.moyenne_streams_par_genre(CHEMIN_CATALOGUE)
-            print("\nMoyenne des streams par genre :")
-            for genre, moyenne in moyennes.items():
-                print(f"  - {genre} : {moyenne:,.0f} streams")
+            print("\n" + "=" * 50)
+            print("   MOYENNE DES STREAMS PAR GENRE")
+            print("=" * 50)
 
-        elif choix == "c":
-            par_annee = analyse.albums_par_annee(CHEMIN_CATALOGUE)
-            print("\nAlbums sortis par annee :")
-            for annee, nb in par_annee.items():
-                print(f"  - {annee} : {nb} album(s)")
+            moyenne = any.moy_par_genre(datframe)
+            print(moyenne)
+
+        elif choix =="c":
+            print("\n" + "=" * 50)
+            print("   NOMBRE D'ALBUMS PAR ANNÉE")
+            print("=" * 50)
+
+            """
+            Ici deux possiblité soit avec l'année entrée -> filtrage avec masque booléen
+                                           validation simple -> agregation 
+            """
+
+            while True: 
+
+                print("  a. Entrer une année. ")
+                print("  b. continer sans ")
+                
+                choix = input("\n  Votre choix : ").strip().lower()
+                
+                if choix == "a":
+                    while True:
+                        try:
+                            annee = int(input("  Année : ").strip())
+                            if annee < 0:
+                                raise ValueError
+                            break
+
+                        except ValueError:
+                            print("\n  ❌ Année invalide — saisissez un nombre entier.")
+                            continue
+
+                    album_years = any.filtrer_albums_par_an(datframe,annee)
+                    print("\n",album_years)
+                    break
+
+                elif choix == "b":
+
+                    album_years = any.albums_par_annee(datframe)
+                    print(album_years)
+                    break
+                else:
+                    print(" ❌ Option Invalide. Veillez réesayer. ")
+                    continue
 
         elif choix == "d":
-            analyse.exporter_rapport(CHEMIN_CATALOGUE, "rapport.csv")
-            print("Rapport exporte dans rapport.csv !")
+            """
+            Exporte le rapport et l'ouvre automatiquement en fonction de l'os.
+            """
+            rapport = any.exporter_rapport(datframe,"rapport.csv")
+            print("\n ✅ Rapport exporté avec succès")
 
+            #os.startfile(rapport) #marche uniquement sur window
+            any.ouvrir_fichier(rapport)
+
+        elif choix == "e":
+            any.graphique_moy_par_genre(datframe)
         elif choix == "r":
             break
         else:
-            print("Option invalide, reessayez.")
+            print(" ❌ Veillez entrer une option valide")
+            continue
 
 
 # ──────────────────────────────────────────────
@@ -242,29 +591,43 @@ def menu_statistiques():
 # ──────────────────────────────────────────────
 
 def main():
-    """Fonction principale — boucle du menu."""
-    afficher_banniere()
+    
+    
+    chemin = "catalogue.json"
 
-    catalogue = label.charger_catalogue(CHEMIN_CATALOGUE)
-    print(f"Catalogue charge : {len(catalogue)} artiste(s) trouve(s).")
+    try:
+        catalogue = label.charger_catalogue(chemin)
+        print(f"\n  ✅ Catalogue chargé — {len(catalogue)} artiste(s) trouvé(s).")
+    except FileNotFoundError:
+        print(f"  ⚠️  Fichier '{chemin}' introuvable. Catalogue vide créé.")
+        catalogue = []
+    except json.JSONDecodeError:
+        print("  ❌ Format du Catalogue Invalide ")
+
 
     while True:
-        afficher_menu_principal()
-        choix = input("Votre choix : ").strip()
+        afficher_menu_principale()
+        
+        try:
+            choix = int(input("  -------Votre choix : ").strip())
+        except ValueError:
+            print(" ❌ Entrée invalide. Veuillez entrer un nombre entre 1 et 5.")
+            continue  # revient au début de la boucle
 
-        if choix == "1":
-            menu_consulter(catalogue)
-        elif choix == "2":
-            catalogue = menu_ajouter_artiste(catalogue)
-        elif choix == "3":
-            catalogue = menu_ajouter_album(catalogue)
-        elif choix == "4":
-            menu_statistiques()
-        elif choix == "5":
-            print("\nA bientot sur SahelSound Records !")
-            sys.exit(0)
+        if int(choix) == 1:
+            consulter_catalogue(catalogue)
+        elif int(choix) == 2:
+            add_artiste(catalogue,chemin)     
+        elif int(choix) == 3: 
+            add_album(catalogue,chemin)
+        elif int(choix) == 4:
+            statistique_rapport()
+        elif int(choix) == 5: 
+            print("\n  Merci 🎉 À bientôt sur SahelSound Records ! 🎵\n") 
+            break
         else:
-            print("Option invalide, entrez un nombre entre 1 et 5.")
+            print("  ❌ Option invalide. Choisissez entre 1 et 5.")
+           
 
 
 if __name__ == "__main__":
