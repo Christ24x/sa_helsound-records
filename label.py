@@ -93,7 +93,6 @@ def rechercher_artiste(catalogue, critere, valeur):
         for art in catalogue:
             if valeur.lower() in art["genre"].lower():
                 artistes.append(art)
-    print("\t\t\t\t\t\t\t\t\talbum")
         
     return artistes
 
