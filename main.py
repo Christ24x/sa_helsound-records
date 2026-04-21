@@ -5,6 +5,7 @@ import pandas as pd
 import os
 
 
+
 def afficher_menu_principale():
 
     """Affiche le menu principal de l'application."""
@@ -96,56 +97,59 @@ def consulter_catalogue(catalogue):
                     break
 
                 if critere in ["nom", "genre"]:
-                    break
+                    pass
                 else:
                     print("\n  ❌  Critère invalide. Saisissez 'nom' ou 'genre'.")
                     erreur = True
+                    continue
+
+                erreur = False
+                  
+                while True:
+                
+                    if not erreur:
+                        valeur = input(f"\n Valeur Rechercher par {critere} : ").strip().lower()
+                    else:
+                        valeur = input(f"\n Valeur Rechercher par {critere} (q pour quitter) : ").strip().lower()
+
+                    if valeur == "q":
+                        break
+
+                    if valeur != "":
+                        break
+                    else:
+                        print("\n ❌ Veuillez entrer une valeur valide")
+                        erreur = True
+                
+                if valeur == "q":
+                    continue
+
+                """
+                Resultat est une liste des artistes trouvées qu'on parcoure 
+                """
+                resultat = label.rechercher_artiste(catalogue,critere,valeur)
+                # print(resultat)
+
+                if not resultat:
+                    print(f"\n ❌  Aucun résultat pour '{valeur}'.")
+                    erreur = False
+                else:
+                    # search = any.laoding_data(resultat)
+                    # print(search)
+                    for artiste in resultat:
+
+                        print(f"\n  ┌─ {artiste['nom']} ({artiste['id']})")
+                        print(f"  │  Genre : {artiste['genre']} | Pays : {artiste['pays']}")
+                        print(f"  │  Albums ({len(artiste['albums'])}) :")
+                        for alb in artiste["albums"]:
+                            print(f"  │    • {alb['titre']} ({alb['annee']}) "
+                                f"— {alb['streams']:,} streams")
+                        print("  └─")
+                    break
+
 
             if critere == "q":
                 continue
-
-
-            erreur = False
-                  
-            while True:
-            
-                if not erreur:
-                    valeur = input(f"\n Valeur Rechercher par {critere} : ").strip().lower()
-                else:
-                    valeur = input(f"\n Valeur Rechercher par {critere} (q pour quitter) : ").strip().lower()
-
-                if valeur == "q":
-                    break
-
-                if valeur != "":
-                    break
-                else:
-                    print("\n ❌ Veuillez entrer une valeur valide")
-                    erreur = True
-            
-            if valeur == "q":
-                continue
-
-            """
-            Resultat est une liste des artistes trouvées qu'on parcoure 
-            """
-            resultat = label.rechercher_artiste(catalogue,critere,valeur)
-            # print(resultat)
-
-            if not resultat:
-                print(f"  Aucun résultat pour '{valeur}'.")
-            else:
-                # search = any.laoding_data(resultat)
-                # print(search)
-                for artiste in resultat:
-
-                    print(f"\n  ┌─ {artiste['nom']} ({artiste['id']})")
-                    print(f"  │  Genre : {artiste['genre']} | Pays : {artiste['pays']}")
-                    print(f"  │  Albums ({len(artiste['albums'])}) :")
-                    for alb in artiste["albums"]:
-                        print(f"  │    • {alb['titre']} ({alb['annee']}) "
-                            f"— {alb['streams']:,} streams")
-                    print("  └─")
 
         elif choix == "c":
             """
@@ -170,26 +174,27 @@ def consulter_catalogue(catalogue):
                     break
 
                 if id_artiste != "":
-                    break
+                    artiste = label.show_detail(catalogue,id_artiste)
+
+                    if artiste is None:
+                        print(f"\n  ❌ Aucun artiste avec l'id '{id_artiste}'.")
+                        continue
+                    else:
+                        print(f"\n  ┌─ {artiste['nom']} ({artiste['id']})")
+                        # print(f"  │  Genre : {artiste['genre']} | Pays : {artiste['pays']}")
+                        print(f"  │  Albums ({len(artiste['albums'])}) :")
+                        for alb in artiste["albums"]:
+                            print(f"  │    • {alb['titre']} ({alb['annee']}) "
+                                f"— {alb['streams']:,} streams")
+                        print("  └─")
+                        break
                 else:
                     print("\n  ❌  Id_artiste invalide. Reesayer. ")
                     erreur = True
 
             if id_artiste == "q":
                 continue
-
-            artiste = label.show_detail(catalogue,id_artiste)
-
-            if artiste is None:
-                print(f"\n  ❌ Aucun artiste avec l'id '{id_artiste}'.")
-            else:
-                print(f"\n  ┌─ {artiste['nom']} ({artiste['id']})")
-                # print(f"  │  Genre : {artiste['genre']} | Pays : {artiste['pays']}")
-                print(f"  │  Albums ({len(artiste['albums'])}) :")
-                for alb in artiste["albums"]:
-                    print(f"  │    • {alb['titre']} ({alb['annee']}) "
-                          f"— {alb['streams']:,} streams")
-                print("  └─")  
+              
         elif choix == "r":
             break
         else:
@@ -466,12 +471,13 @@ def add_album(catalogue,chemin):
             
                 nouvel_album = {"titre": titre, "annee": annee, "streams": streams}
                 nouvel_albums.append(nouvel_album)
+                # print(nouvel_albums)
              
-                catalogue = label.ajouter_album(catalogue,id_artiste, nouvel_albums)            
-                label.sauvegarder_catalogue(catalogue, chemin)
-                for alb in nouvel_albums:
-                    print(f"\n  ✅ L'album '{alb['titre']}' de l'Artiste '{artiste['nom']}' ajouté avec succès et catalogue sauvegardé.")
-                    break
+            catalogue = label.ajouter_album(catalogue,id_artiste, nouvel_albums)            
+            label.sauvegarder_catalogue(catalogue, chemin)
+            for alb in nouvel_albums:
+                print(f"\n  ✅ L'album '{alb['titre']}' de l'Artiste '{artiste['nom']}' ajouté avec succès et catalogue sauvegardé.")
+            
             break
         break
     
